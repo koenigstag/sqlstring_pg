@@ -6,7 +6,7 @@
 [![Build Status][github-actions-ci-image]][github-actions-ci-url]
 [![Coverage Status][coveralls-image]][coveralls-url]
 
-Simple SQL escape and format for MySQL
+Simple SQL escape and format for PostgreSQL
 
 ## Install
 
@@ -24,8 +24,8 @@ var SqlString = require('sqlstring');
 ### Escaping query values
 
 **Caution** These methods of escaping values only works when the
-[NO_BACKSLASH_ESCAPES](https://dev.mysql.com/doc/refman/5.7/en/sql-mode.html#sqlmode_no_backslash_escapes)
-SQL mode is disabled (which is the default state for MySQL servers).
+[NO_BACKSLASH_ESCAPES](https://dev.postgresql.com/doc/refman/5.7/en/sql-mode.html#sqlmode_no_backslash_escapes)
+SQL mode is disabled (which is the default state for PostgreSQL servers).
 
 **Caution** This library performs client-side escaping, as this is a library
 to generate SQL strings on the client side. The syntax for functions like
@@ -69,7 +69,7 @@ var sql    = SqlString.format('UPDATE users SET foo = ?, bar = ?, baz = ? WHERE 
 console.log(sql); // UPDATE users SET foo = 'a', bar = 'b', baz = 'c' WHERE id = 1
 ```
 
-This looks similar to prepared statements in MySQL, however it really just uses
+This looks similar to prepared statements in PostgreSQL, however it really just uses
 the same `SqlString.escape()` method internally.
 
 **Caution** This also differs from prepared statements in that all `?` are
@@ -92,16 +92,16 @@ Different value types are escaped differently, here is how:
   property's value is an object, toString() is called on it and the returned
   value is used.
 * `undefined` / `null` are converted to `NULL`
-* `NaN` / `Infinity` are left as-is. MySQL does not support these, and trying
-  to insert them as values will trigger MySQL errors until they implement
+* `NaN` / `Infinity` are left as-is. PostgreSQL does not support these, and trying
+  to insert them as values will trigger PostgreSQL errors until they implement
   support.
 
 You may have noticed that this escaping allows you to do neat things like this:
 
 ```js
-var post  = {id: 1, title: 'Hello MySQL'};
+var post  = {id: 1, title: 'Hello PostgreSQL'};
 var sql = SqlString.format('INSERT INTO posts SET ?', post);
-console.log(sql); // INSERT INTO posts SET `id` = 1, `title` = 'Hello MySQL'
+console.log(sql); // INSERT INTO posts SET `id` = 1, `title` = 'Hello PostgreSQL'
 ```
 
 And the `toSqlString` method allows you to form complex queries with functions:
@@ -129,8 +129,8 @@ If you feel the need to escape queries by yourself, you can also use the escapin
 function directly:
 
 ```js
-var sql = 'SELECT * FROM posts WHERE title=' + SqlString.escape('Hello MySQL');
-console.log(sql); // SELECT * FROM posts WHERE title='Hello MySQL'
+var sql = 'SELECT * FROM posts WHERE title=' + SqlString.escape('Hello PostgreSQL');
+console.log(sql); // SELECT * FROM posts WHERE title='Hello PostgreSQL'
 ```
 
 ### Escaping query identifiers
@@ -193,7 +193,7 @@ allowing you provide a custom means of turning objects into strings, as well as 
 location-specific/timezone-aware `Date`.
 
 This can be further combined with the `SqlString.raw()` helper to generate SQL
-that includes MySQL functions as dynamic vales:
+that includes PostgreSQL functions as dynamic vales:
 
 ```js
 var userId = 1;
@@ -209,9 +209,9 @@ console.log(sql); // UPDATE `users` SET `email` = 'foobar@example.com', `modifie
 [npm-version-image]: https://img.shields.io/npm/v/sqlstring.svg
 [npm-downloads-image]: https://img.shields.io/npm/dm/sqlstring.svg
 [npm-url]: https://npmjs.org/package/sqlstring
-[coveralls-image]: https://img.shields.io/coveralls/mysqljs/sqlstring/master.svg
-[coveralls-url]: https://coveralls.io/r/mysqljs/sqlstring?branch=master
-[github-actions-ci-image]: https://img.shields.io/github/workflow/status/mysqljs/sqlstring/ci/master?label=build
-[github-actions-ci-url]: https://github.com/mysqljs/sqlstring/actions/workflows/ci.yml
+[coveralls-image]: https://img.shields.io/coveralls/postgresqljs/sqlstring/master.svg
+[coveralls-url]: https://coveralls.io/r/postgresqljs/sqlstring?branch=master
+[github-actions-ci-image]: https://img.shields.io/github/workflow/status/postgresqljs/sqlstring/ci/master?label=build
+[github-actions-ci-url]: https://github.com/postgresqljs/sqlstring/actions/workflows/ci.yml
 [node-image]: https://img.shields.io/node/v/sqlstring.svg
 [node-url]: https://nodejs.org/en/download
