@@ -3,52 +3,51 @@ var lib = require('../../');
 var test      = require('utest');
 var vm        = require('vm');
 
-// same as require('sqlstring')
-var SqlString = lib.withConfig(lib.MYSQL_CONFIG);
+var SqlString = lib.withConfig(lib.POSTGRES_CONFIG);
 
 test('SqlString.escapeId', {
   'value is quoted': function() {
-    assert.equal(SqlString.escapeId('id'), '`id`');
+    assert.equal(SqlString.escapeId('id'), '"id"');
   },
 
   'value can be a number': function() {
-    assert.equal(SqlString.escapeId(42), '`42`');
+    assert.equal(SqlString.escapeId(42), '"42"');
   },
 
   'value can be an object': function() {
-    assert.equal(SqlString.escapeId({}), '`[object Object]`');
+    assert.equal(SqlString.escapeId({}), '"[object Object]"');
   },
 
   'value toString is called': function() {
-    assert.equal(SqlString.escapeId({ toString: function() { return 'foo'; } }), '`foo`');
+    assert.equal(SqlString.escapeId({ toString: function() { return 'foo'; } }), '"foo"');
   },
 
   'value toString is quoted': function() {
-    assert.equal(SqlString.escapeId({ toString: function() { return 'f`oo'; } }), '`f``oo`');
+    assert.equal(SqlString.escapeId({ toString: function() { return 'f`oo'; } }), '"f`oo"');
   },
 
   'value containing escapes is quoted': function() {
-    assert.equal(SqlString.escapeId('i`d'), '`i``d`');
+    assert.equal(SqlString.escapeId('i`d'), '"i`d"');
   },
 
   'value containing separator is quoted': function() {
-    assert.equal(SqlString.escapeId('id1.id2'), '`id1`.`id2`');
+    assert.equal(SqlString.escapeId('id1.id2'), '"id1"."id2"');
   },
 
   'value containing separator and escapes is quoted': function() {
-    assert.equal(SqlString.escapeId('id`1.i`d2'), '`id``1`.`i``d2`');
+    assert.equal(SqlString.escapeId('id`1.i`d2'), '"id`1"."i`d2"');
   },
 
   'value containing separator is fully escaped when forbidQualified': function() {
-    assert.equal(SqlString.escapeId('id1.id2', true), '`id1.id2`');
+    assert.equal(SqlString.escapeId('id1.id2', true), '"id1.id2"');
   },
 
   'arrays are turned into lists': function() {
-    assert.equal(SqlString.escapeId(['a', 'b', 't.c']), '`a`, `b`, `t`.`c`');
+    assert.equal(SqlString.escapeId(['a', 'b', 't.c']), '"a", "b", "t"."c"');
   },
 
   'nested arrays are flattened': function() {
-    assert.equal(SqlString.escapeId(['a', ['b', ['t.c']]]), '`a`, `b`, `t`.`c`');
+    assert.equal(SqlString.escapeId(['a', ['b', ['t.c']]]), '"a", "b", "t"."c"');
   }
 });
 
@@ -75,15 +74,15 @@ test('SqlString.escape', {
   },
 
   'objects are turned into key value pairs': function() {
-    assert.equal(SqlString.escape({a: 'b', c: 'd'}), "`a` = 'b', `c` = 'd'");
+    assert.equal(SqlString.escape({a: 'b', c: 'd'}), `"a" = 'b', "c" = 'd'`);
   },
 
   'objects function properties are ignored': function() {
-    assert.equal(SqlString.escape({a: 'b', c: function() {}}), "`a` = 'b'");
+    assert.equal(SqlString.escape({a: 'b', c: function() {}}), `"a" = 'b'`);
   },
 
   'object values toSqlString is called': function() {
-    assert.equal(SqlString.escape({id: { toSqlString: function() { return 'LAST_INSERT_ID()'; } }}), '`id` = LAST_INSERT_ID()');
+    assert.equal(SqlString.escape({id: { toSqlString: function() { return 'LAST_INSERT_ID()'; } }}), '"id" = LAST_INSERT_ID()');
   },
 
   'objects toSqlString is called': function() {
@@ -95,15 +94,15 @@ test('SqlString.escape', {
   },
 
   'nested objects are cast to strings': function() {
-    assert.equal(SqlString.escape({a: {nested: true}}), "`a` = '[object Object]'");
+    assert.equal(SqlString.escape({a: {nested: true}}), `"a" = '[object Object]'`);
   },
 
   'nested objects use toString': function() {
-    assert.equal(SqlString.escape({a: { toString: function() { return 'foo'; } }}), "`a` = 'foo'");
+    assert.equal(SqlString.escape({a: { toString: function() { return 'foo'; } }}), `"a" = 'foo'`);
   },
 
   'nested objects use toString is quoted': function() {
-    assert.equal(SqlString.escape({a: { toString: function() { return "f'oo"; } }}), "`a` = 'f\\'oo'");
+    assert.equal(SqlString.escape({a: { toString: function() { return "f'oo"; } }}), `"a" = 'f\\'oo'`);
   },
 
   'arrays are turned into lists': function() {
@@ -167,8 +166,8 @@ test('SqlString.escape', {
   },
 
   'double quotes get escaped': function() {
-    assert.equal(SqlString.escape('Sup"er'), "'Sup\\\"er'");
-    assert.equal(SqlString.escape('Super"'), "'Super\\\"'");
+    assert.equal(SqlString.escape('Sup"er'), `'Sup\"er'`);
+    assert.equal(SqlString.escape('Super"'), `'Super\"'`);
   },
 
   'dates are converted to YYYY-MM-DD HH:II:SS.sss': function() {
@@ -259,60 +258,60 @@ test('SqlString.escape', {
 });
 
 test('SqlString.format', {
-  'question marks are replaced with escaped array values': function() {
-    var sql = SqlString.format('? and ?', ['a', 'b']);
+  'placeholder marks are replaced with escaped array values': function() {
+    var sql = SqlString.format('$1 and $2', ['a', 'b']);
     assert.equal(sql, "'a' and 'b'");
   },
 
-  'double quest marks are replaced with escaped id': function () {
-    var sql = SqlString.format('SELECT * FROM ?? WHERE name LIKE ?', ['products', '%pizza%']);
-    assert.equal(sql, "SELECT * FROM `products` WHERE name LIKE '%pizza%'");
+  '%I marks are replaced with escaped id': function () {
+    var sql = SqlString.format('SELECT * FROM %I WHERE name LIKE $2', ['products', '%pizza%']);
+    assert.equal(sql, `SELECT * FROM "products" WHERE name LIKE '%pizza%'`);
 
-    var sql = SqlString.format('SELECT * FROM ?? WHERE ?? = ?', ['users', 'id', 42]);
-    assert.equal(sql, 'SELECT * FROM `users` WHERE `id` = 42');
+    var sql = SqlString.format('SELECT * FROM %I WHERE %I = $2', ['table', 'id', 42]);
+    assert.equal(sql, 'SELECT * FROM "table" WHERE "id" = 42');
 
-    var sql = SqlString.format('SELECT * FROM ?? INNER JOIN ?? ON ?? = ?? WHERE ?? = ?', ['users', 'clients', 'clients.user_id', 'users.id', 'users.id', 42]);
-    assert.equal(sql, 'SELECT * FROM `users` INNER JOIN `clients` ON `clients`.`user_id` = `users`.`id` WHERE `users`.`id` = 42');
+    var sql = SqlString.format('SELECT * FROM %I INNER JOIN %I ON %I = %I WHERE %I = $6', ['users', 'clients', 'clients.user_id', 'users.id', 'users.id', 42]);
+    assert.equal(sql, 'SELECT * FROM "users" INNER JOIN "clients" ON "clients"."user_id" = "users"."id" WHERE "users"."id" = 42');
   },
 
-  'triple question marks are ignored': function () {
-    var sql = SqlString.format('? or ??? and ?', ['foo', 'bar', 'fizz', 'buzz']);
+  'triple placeholder marks are ignored': function () {
+    var sql = SqlString.format('$1 or ??? and $2', ['foo', 'bar', 'fizz', 'buzz']);
     assert.equal(sql, "'foo' or ??? and 'bar'");
   },
 
-  'extra question marks are left untouched': function() {
-    var sql = SqlString.format('? and ?', ['a']);
-    assert.equal(sql, "'a' and ?");
+  'extra placeholder marks are left untouched': function() {
+    var sql = SqlString.format('$1 and $2', ['a']);
+    assert.equal(sql, "'a' and $2");
   },
 
   'extra arguments are not used': function() {
-    var sql = SqlString.format('? and ?', ['a', 'b', 'c']);
+    var sql = SqlString.format('$1 and $2', ['a', 'b', 'c']);
     assert.equal(sql, "'a' and 'b'");
   },
 
-  'question marks within values do not cause issues': function() {
-    var sql = SqlString.format('? and ?', ['hello?', 'b']);
+  'placeholder marks within values do not cause issues': function() {
+    var sql = SqlString.format('$1 and $2', ['hello?', 'b']);
     assert.equal(sql, "'hello?' and 'b'");
   },
 
   'undefined is ignored': function () {
-    var sql = SqlString.format('?', undefined, false);
-    assert.equal(sql, '?');
+    var sql = SqlString.format('$1', undefined, false);
+    assert.equal(sql, '$1');
   },
 
   'objects is converted to values': function () {
-    var sql = SqlString.format('?', { 'hello': 'world' }, false);
-    assert.equal(sql, "`hello` = 'world'");
+    var sql = SqlString.format('$1', { 'hello': 'world' }, false);
+    assert.equal(sql, `"hello" = 'world'`);
   },
 
   'objects is not converted to values': function () {
-    var sql = SqlString.format('?', { 'hello': 'world' }, true);
+    var sql = SqlString.format('$1', { 'hello': 'world' }, true);
     assert.equal(sql, "'[object Object]'");
 
-    var sql = SqlString.format('?', { toString: function () { return 'hello'; } }, true);
+    var sql = SqlString.format('$1', { toString: function () { return 'hello'; } }, true);
     assert.equal(sql, "'hello'");
 
-    var sql = SqlString.format('?', { toSqlString: function () { return '@foo'; } }, true);
+    var sql = SqlString.format('$1', { toSqlString: function () { return '@foo'; } }, true);
     assert.equal(sql, '@foo');
   },
 
