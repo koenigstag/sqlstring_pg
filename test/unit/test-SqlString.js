@@ -1,7 +1,10 @@
 var assert    = require('assert');
-var SqlString = require('../../');
+var lib = require('../../');
 var test      = require('utest');
 var vm        = require('vm');
+
+// same as require('sqlstring')
+var SqlString = lib.withConfig(lib.MYSQL_CONFIG);
 
 test('SqlString.escapeId', {
   'value is quoted': function() {
