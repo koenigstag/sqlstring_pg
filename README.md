@@ -194,7 +194,7 @@ that includes PostgreSQL functions as dynamic vales:
 ```js
 var userId = 1;
 var data   = { email: 'foobar@example.com', modified: SqlString.raw('NOW()') };
-var sql    = SqlString.format('UPDATE ?? SET ? WHERE `id` = ?', ['users', data, userId]);
+var sql    = SqlString.format('UPDATE ?? SET ? WHERE "id" = ?', ['users', data, userId]);
 console.log(sql); // UPDATE "users" SET "email" = 'foobar@example.com', "modified" = NOW() WHERE "id" = 1
 ```
 
