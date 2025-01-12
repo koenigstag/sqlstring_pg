@@ -8,24 +8,22 @@
 
 Simple SQL escape and format for PostgreSQL
 
+Worth mentioning that this library is a fork of [mysqljs/sqlstring](/mysqljs/sqlstring) package but for PostgreSQL syntax.
+
 ## Install
 
 ```sh
-$ npm install sqlstring
+$ npm install sqlstring_pg
 ```
 
 ## Usage
 
 
 ```js
-var SqlString = require('sqlstring');
+var SqlString = require('sqlstring_pg');
 ```
 
 ### Escaping query values
-
-**Caution** These methods of escaping values only works when the
-[NO_BACKSLASH_ESCAPES](https://dev.postgresql.com/doc/refman/5.7/en/sql-mode.html#sqlmode_no_backslash_escapes)
-SQL mode is disabled (which is the default state for PostgreSQL servers).
 
 **Caution** This library performs client-side escaping, as this is a library
 to generate SQL strings on the client side. The syntax for functions like
@@ -44,9 +42,9 @@ provided data before using it inside a SQL query. You can do so using the
 `SqlString.escape()` method:
 
 ```js
-var userId = 'some user provided value';
+var userId = 'some value';
 var sql    = 'SELECT * FROM users WHERE id = ' + SqlString.escape(userId);
-console.log(sql); // SELECT * FROM users WHERE id = 'some user provided value'
+console.log(sql); // SELECT * FROM users WHERE id = 'some value'
 ```
 
 Alternatively, you can use `?` characters as placeholders for values you would
@@ -92,16 +90,14 @@ Different value types are escaped differently, here is how:
   property's value is an object, toString() is called on it and the returned
   value is used.
 * `undefined` / `null` are converted to `NULL`
-* `NaN` / `Infinity` are left as-is. PostgreSQL does not support these, and trying
-  to insert them as values will trigger PostgreSQL errors until they implement
-  support.
+* `NaN` / `Infinity` are left as-is. PostgreSQL supports these for `real` and `double precision` types.
 
 You may have noticed that this escaping allows you to do neat things like this:
 
 ```js
 var post  = {id: 1, title: 'Hello PostgreSQL'};
 var sql = SqlString.format('INSERT INTO posts SET ?', post);
-console.log(sql); // INSERT INTO posts SET `id` = 1, `title` = 'Hello PostgreSQL'
+console.log(sql); // INSERT INTO posts SET "id" = 1, "title" = 'Hello PostgreSQL'
 ```
 
 And the `toSqlString` method allows you to form complex queries with functions:
@@ -141,7 +137,7 @@ provided by a user, you should escape it with `SqlString.escapeId(identifier)` l
 ```js
 var sorter = 'date';
 var sql    = 'SELECT * FROM posts ORDER BY ' + SqlString.escapeId(sorter);
-console.log(sql); // SELECT * FROM posts ORDER BY `date`
+console.log(sql); // SELECT * FROM posts ORDER BY "date"
 ```
 
 It also supports adding qualified identifiers. It will escape both parts.
@@ -149,7 +145,7 @@ It also supports adding qualified identifiers. It will escape both parts.
 ```js
 var sorter = 'date';
 var sql    = 'SELECT * FROM posts ORDER BY ' + SqlString.escapeId('posts.' + sorter);
-console.log(sql); // SELECT * FROM posts ORDER BY `posts`.`date`
+console.log(sql); // SELECT * FROM posts ORDER BY "posts"."date"
 ```
 
 If you do not want to treat `.` as qualified identifiers, you can set the second
@@ -158,7 +154,7 @@ argument to `true` in order to keep the string as a literal identifier:
 ```js
 var sorter = 'date.2';
 var sql    = 'SELECT * FROM posts ORDER BY ' + SqlString.escapeId(sorter, true);
-console.log(sql); // SELECT * FROM posts ORDER BY `date.2`
+console.log(sql); // SELECT * FROM posts ORDER BY "date.2"
 ```
 
 Alternatively, you can use `??` characters as placeholders for identifiers you would
@@ -168,7 +164,7 @@ like to have escaped like this:
 var userId = 1;
 var columns = ['username', 'email'];
 var sql     = SqlString.format('SELECT ?? FROM ?? WHERE id = ?', [columns, 'users', userId]);
-console.log(sql); // SELECT `username`, `email` FROM `users` WHERE id = 1
+console.log(sql); // SELECT "username", "email" FROM "users" WHERE id = 1
 ```
 **Please note that this last character sequence is experimental and syntax might change**
 
@@ -183,7 +179,7 @@ utilizing the proper escaping for ids and values. A simple example of this follo
 var userId  = 1;
 var inserts = ['users', 'id', userId];
 var sql     = SqlString.format('SELECT * FROM ?? WHERE ?? = ?', inserts);
-console.log(sql); // SELECT * FROM `users` WHERE `id` = 1
+console.log(sql); // SELECT * FROM "users" WHERE "id" = 1
 ```
 
 Following this you then have a valid, escaped query that you can then send to the database safely.
@@ -199,7 +195,7 @@ that includes PostgreSQL functions as dynamic vales:
 var userId = 1;
 var data   = { email: 'foobar@example.com', modified: SqlString.raw('NOW()') };
 var sql    = SqlString.format('UPDATE ?? SET ? WHERE `id` = ?', ['users', data, userId]);
-console.log(sql); // UPDATE `users` SET `email` = 'foobar@example.com', `modified` = NOW() WHERE `id` = 1
+console.log(sql); // UPDATE "users" SET "email" = 'foobar@example.com', "modified" = NOW() WHERE "id" = 1
 ```
 
 ## License
